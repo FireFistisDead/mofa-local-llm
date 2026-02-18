@@ -1,0 +1,67 @@
+[package]
+name = "mofa-local-llm"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82.0"
+description = "Local ML inference server and GUI for Apple Silicon, powered by OminiX-MLX"
+
+[[bin]]
+name = "mofa-server"
+path = "src/bin/server.rs"
+
+[[bin]]
+name = "mofa-gui"
+path = "src/bin/gui.rs"
+
+[dependencies]
+# OminiX-MLX model crates
+mlx-rs = { path = "../OminiX-MLX/mlx-rs", features = ["metal", "accelerate"] }
+mlx-rs-core = { path = "../OminiX-MLX/mlx-rs-core" }
+qwen3-mlx = { path = "../OminiX-MLX/qwen3-mlx" }
+glm4-mlx = { path = "../OminiX-MLX/glm4-mlx" }
+mixtral-mlx = { path = "../OminiX-MLX/mixtral-mlx" }
+mistral-mlx = { path = "../OminiX-MLX/mistral-mlx" }
+minicpm-sala-mlx = { path = "../OminiX-MLX/MiniCPM-SALA-MLX" }
+moxin-vlm-mlx = { path = "../OminiX-MLX/moxin-vlm-mlx" }
+funasr-mlx = { path = "../OminiX-MLX/funasr-mlx" }
+funasr-nano-mlx = { path = "../OminiX-MLX/funasr-nano-mlx" }
+gpt-sovits-mlx = { path = "../OminiX-MLX/gpt-sovits-mlx" }
+flux-klein-mlx = { path = "../OminiX-MLX/flux-klein-mlx" }
+zimage-mlx = { path = "../OminiX-MLX/zimage-mlx" }
+
+# Web framework
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+tokio-stream = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# GUI
+eframe = "0.28"
+egui = "0.28"
+egui_extras = { version = "0.28", features = ["image"] }
+
+# Model download
+hf-hub = "0.4"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+thiserror = "2"
+dirs = "5"
+image = "0.25"
+tokenizers = "0.21"
+
+# Audio
+cpal = "0.15"
+hound = "3.5"
