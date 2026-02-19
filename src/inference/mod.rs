@@ -11,6 +11,7 @@ use std::sync::mpsc;
 pub enum InferenceRequest {
     /// Chat completion (LLM or VLM)
     Chat {
+        model_id: String,
         messages: Vec<(String, String)>,
         max_tokens: usize,
         temperature: f32,
@@ -18,18 +19,21 @@ pub enum InferenceRequest {
     },
     /// Speech-to-text (ASR)
     Transcribe {
+        model_id: String,
         audio_samples: Vec<f32>,
         sample_rate: u32,
         response_tx: tokio::sync::oneshot::Sender<Result<String, String>>,
     },
     /// Text-to-speech (TTS)
     Synthesize {
+        model_id: String,
         text: String,
         reference_audio: Option<String>,
         response_tx: tokio::sync::oneshot::Sender<Result<Vec<f32>, String>>,
     },
     /// Image generation
     GenerateImage {
+        model_id: String,
         prompt: String,
         width: u32,
         height: u32,

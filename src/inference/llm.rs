@@ -18,6 +18,21 @@ pub enum LlmBackend {
     MiniCpmSala,
 }
 
+impl LlmBackend {
+    pub fn from_model_type(model_type: &str) -> Option<Self> {
+        match model_type {
+            "qwen2" => Some(LlmBackend::Qwen2),
+            "qwen3" | "qwen" => Some(LlmBackend::Qwen3),
+            "mistral" => Some(LlmBackend::Mistral),
+            "glm4" | "chatglm" => Some(LlmBackend::Glm4),
+            "mixtral" => Some(LlmBackend::Mixtral),
+            "minicpm" | "minicpm4" => Some(LlmBackend::MiniCpmSala),
+            _ => None,
+        }
+    }
+}
+
+
 /// A loaded LLM model with its tokenizer.
 pub struct LlmEngine {
     backend: LlmBackend,

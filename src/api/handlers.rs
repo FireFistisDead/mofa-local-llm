@@ -1,4 +1,4 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::StatusCode;
 use axum::response::{Html, Json};
 use serde_json::{json, Value};
@@ -11,6 +11,12 @@ use crate::download;
 use crate::inference::{ChatResult, InferenceRequest};
 
 use tokio::sync::{oneshot, RwLock};
+
+/// Argument for audio transcription
+#[derive(serde::Deserialize)]
+pub struct AudioParams {
+    pub model: Option<String>,
+}
 
 /// Shared server state.
 pub struct AppState {
@@ -60,6 +66,7 @@ pub async fn chat_completion(
     state
         .inference_tx
         .send(InferenceRequest::Chat {
+            model_id: req.model.clone(),
             messages,
             max_tokens,
             temperature,
@@ -272,6 +279,7 @@ pub async fn delete_model(
 
 pub async fn transcribe_audio(
     State(state): State<SharedState>,
+    Query(params): Query<AudioParams>,
     body: axum::body::Bytes,
 ) -> Result<Json<TranscriptionResponse>, (StatusCode, Json<ApiError>)> {
     let (resp_tx, resp_rx) = oneshot::channel();
@@ -283,10 +291,13 @@ pub async fn transcribe_audio(
             Json(ApiError::new(e, "invalid_request_error")),
         )
     })?;
+    
+    let model_id = params.model.unwrap_or_else(|| "funasr-paraformer".to_string());
 
     state
         .inference_tx
         .send(InferenceRequest::Transcribe {
+            model_id,
             audio_samples: samples,
             sample_rate: 16000,
             response_tx: resp_tx,
