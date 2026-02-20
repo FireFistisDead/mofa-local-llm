@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
-use crate::inference::llm::LlmEngine;
-use crate::inference::asr::AsrEngine;
-use crate::inference::tts::TtsEngine;
-use crate::inference::image_gen::ImageGenEngine;
 use crate::config::AppConfig;
+use crate::inference::asr::AsrEngine;
+use crate::inference::image_gen::ImageGenEngine;
+use crate::inference::llm::LlmEngine;
+use crate::inference::tts::TtsEngine;
 
 /// Types of models supported by the orchestrator.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -71,7 +71,7 @@ impl ModelPool {
     pub fn get_model(&mut self, model_id: &str) -> Option<&mut dyn ManagedModel> {
         self.models.get_mut(model_id).map(|b| b.as_mut())
     }
-    
+
     pub fn is_loaded(&self, model_id: &str) -> bool {
         self.models.contains_key(model_id)
     }
@@ -79,39 +79,46 @@ impl ModelPool {
     pub fn list_loaded(&self) -> Vec<String> {
         self.models.keys().cloned().collect()
     }
-    
+
     pub fn load_model(&mut self, model_id: &str) -> Result<(), String> {
         if self.models.contains_key(model_id) {
             return Ok(());
         }
 
         let config = self.config.lock().unwrap();
-        let entry = config.models.iter().find(|m| m.id == model_id)
+        let entry = config
+            .models
+            .iter()
+            .find(|m| m.id == model_id)
             .ok_or_else(|| format!("Model '{}' not found in configuration", model_id))?
             .clone();
         drop(config); // Unlock early
-        
+
         let path = PathBuf::from(&entry.path);
-        
+
         // Attempt to detect LLM backend
         if let Some(backend) = crate::inference::llm::LlmBackend::from_model_type(&entry.model_type) {
             let engine = LlmEngine::load(&path, backend, model_id)?;
             self.models.insert(model_id.to_string(), Box::new(ManagedLlm(engine)));
             return Ok(());
         }
-        
+
         // Other types
         match entry.model_type.as_str() {
             "funasr" | "paraformer" => {
-                 let engine = AsrEngine::load(&path, model_id)?;
-                 self.models.insert(model_id.to_string(), Box::new(ManagedAsr(engine)));
-                 Ok(())
-            },
+                let engine = AsrEngine::load(&path, model_id)?;
+                self.models.insert(model_id.to_string(), Box::new(ManagedAsr(engine)));
+                Ok(())
+            }
             "gpt-sovits" => {
-                 let engine = TtsEngine::load(&path, model_id)?;
-                 self.models.insert(model_id.to_string(), Box::new(ManagedTts(engine)));
-                 Ok(())
-            },
-            _ => Err(format!("Unsupported model type: {} for model {}", entry.model_type, model_id)),
+                let engine = TtsEngine::load(&path, model_id)?;
+                self.models.insert(model_id.to_string(), Box::new(ManagedTts(engine)));
+                Ok(())
+            }
+            _ => Err(format!(
+                "Unsupported model type: {} for model {}",
+                entry.model_type, model_id
+            )),
         }
     }
+}
