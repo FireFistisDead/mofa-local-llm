@@ -1,0 +1,58 @@
+name: Build on Apple Silicon (macOS)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  # Allow manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Cargo Build (macOS Apple Silicon)
+    runs-on: macos-latest   # GitHub's free M1/M2 Apple Silicon runner
+
+    steps:
+      # 1. Checkout your repo AND the OminiX-MLX submodule/sibling
+      - name: Checkout mofa-local-llm
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # 2. Checkout OminiX-MLX into the expected sibling directory
+      #    (Your Cargo.toml uses path = "../OminiX-MLX/...")
+      - name: Checkout OminiX-MLX
+        uses: actions/checkout@v4
+        with:
+          repository: OminiX-ai/OminiX-MLX
+          path: ../OminiX-MLX
+          submodules: recursive
+
+      # 3. Install Rust stable toolchain
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # 4. Cache Cargo registry + build artifacts to speed up repeat builds
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 5. Build the project (both binaries)
+      - name: Build (debug)
+        run: cargo build --verbose
+
+      # 6. Optionally build release
+      # - name: Build (release)
+      #   run: cargo build --release --verbose
+
+      # 7. Run tests (if any)
+      - name: Run tests
+        run: cargo test --verbose
