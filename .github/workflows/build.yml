@@ -14,26 +14,35 @@ jobs:
     runs-on: macos-latest   # GitHub's free M1/M2 Apple Silicon runner
 
     steps:
-      # 1. Checkout your repo AND the OminiX-MLX submodule/sibling
+      # 1. Checkout mofa-local-llm
       - name: Checkout mofa-local-llm
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      # 2. Checkout OminiX-MLX into the expected sibling directory
-      #    (Your Cargo.toml uses path = "../OminiX-MLX/...")
+      # 2. Checkout OminiX-MLX as a SUBDIRECTORY inside the workspace
+      #    GitHub Actions only allows paths inside the workspace, so we put it
+      #    at OminiX-MLX/ and patch Cargo.toml paths below.
       - name: Checkout OminiX-MLX
         uses: actions/checkout@v4
         with:
           repository: OminiX-ai/OminiX-MLX
-          path: ../OminiX-MLX
+          path: OminiX-MLX          # → $GITHUB_WORKSPACE/OminiX-MLX
           submodules: recursive
 
-      # 3. Install Rust stable toolchain
+      # 3. Patch Cargo.toml: rewrite "../OminiX-MLX/" → "OminiX-MLX/"
+      #    so Cargo resolves the local path crates correctly
+      - name: Patch Cargo.toml paths
+        run: |
+          sed -i '' 's|path = "\.\./OminiX-MLX/|path = "OminiX-MLX/|g' Cargo.toml
+          echo "=== Patched Cargo.toml dependencies ==="
+          grep 'path = ' Cargo.toml
+
+      # 4. Install Rust stable toolchain
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # 4. Cache Cargo registry + build artifacts to speed up repeat builds
+      # 5. Cache Cargo registry + build artifacts to speed up repeat builds
       - name: Cache Cargo
         uses: actions/cache@v4
         with:
@@ -45,14 +54,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      # 5. Build the project (both binaries)
+      # 6. Build the project (both binaries)
       - name: Build (debug)
         run: cargo build --verbose
-
-      # 6. Optionally build release
-      # - name: Build (release)
-      #   run: cargo build --release --verbose
 
       # 7. Run tests (if any)
       - name: Run tests
         run: cargo test --verbose
+
+      # 8. Upload compiled binaries as downloadable artifacts
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: mofa-binaries-macos
+          path: |
+            target/debug/mofa-server
+            target/debug/mofa-gui
+          retention-days: 7
