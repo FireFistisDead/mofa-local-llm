@@ -38,7 +38,11 @@ jobs:
           echo "=== Patched Cargo.toml dependencies ==="
           grep 'path = ' Cargo.toml
 
-      # 4. Install Rust stable toolchain
+      # 4. Install protoc (required by prost-build)
+      - name: Install protoc
+        run: brew install protobuf
+
+      # 5. Install Rust stable toolchain
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
